@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analysis Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4cc9f0;
+            --dark-color: #2b2d42;
+            --light-color: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+        }
+
+        .sidebar {
+            background-color: var(--dark-color);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            padding-top: 20px;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 5px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link.active {
+            color: white;
+            background-color: var(--primary-color);
+        }
+
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            border: none;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+            border-radius: 12px 12px 0 0 !important;
+        }
+
+        .plot-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .plot-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--primary-color);
+            height: 100%;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ai-response {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid var(--accent-color);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .ai-response strong {
+            color: var(--dark-color);
+        }
+
+        .correlation-matrix {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+
+        .file-upload {
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+
+        .insight-card {
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 15px;
+            transition: transform 0.2s;
+        }
+
+        .insight-card:hover {
+            transform: translateX(5px);
+        }
+
+        .strength-high {
+            border-left-color: #e63946;
+        }
+
+        .strength-medium {
+            border-left-color: #f4a261;
+        }
+
+        .strength-low {
+            border-left-color: #ffd166;
+        }
+
+        #loadingSpinner {
+            display: none;
+        }
+
+        .data-quality-badge {
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+
+        .before-after-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+
+        .before-after-col {
+            width: 48%;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .outlier-row {
+            background-color: #fff3cd !important;
+        }
+
+        .chart-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .chart-delete-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .chart-color-picker {
+            position: absolute;
+            top: 15px;
+            right: 50px;
+            z-index: 10;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .plot-container:hover .chart-delete-btn,
+        .plot-container:hover .chart-color-picker {
+            opacity: 1;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .badge.bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+
+        .file-upload i.bi-cloud-arrow-up {
+            color: var(--primary-color);
+            font-size: 56px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar col-md-3 col-lg-2 d-md-block">
+        <div class="text-center mb-4">
+            <h4>Data Analysis Dashboard</h4>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" id="uploadTab">
+                    <i class="bi bi-upload me-2"></i>Upload Data
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="overviewTab">
+                    <i class="bi bi-bar-chart me-2"></i>Data Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="analysisTab">
+                    <i class="bi bi-graph-up me-2"></i>Analysis
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="assistantTab">
+                    <i class="bi bi-robot me-2"></i>AI Assistant
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="cleanTab">
+                    <i class="bi bi-brush me-2"></i>Data Cleaning
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <!-- Upload Section -->
+        <div id="uploadSection">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-upload me-2"></i>Upload Your Dataset</h2>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h5>Upload CSV or Excel File</h5>
+                </div>
+                <div class="card-body">
+                    <div class="file-upload" id="dropArea">
+                        <input type="file" id="fileInput" class="d-none" accept=".csv,.xlsx,.xls">
+                        <div class="text-center py-4">
+                            <i class="bi bi-cloud-arrow-up" style="font-size: 48px; color: #0d6efd;"></i>
+                            <h5 class="mt-3">Drag & Drop your file here</h5>
+                            <p class="text-muted">or</p>
+                            <button class="btn btn-primary" id="browseBtn">Browse Files</button>
+                            <p class="text-muted mt-2">Supports: CSV, Excel (.xlsx, .xls)</p>
+                        </div>
+                    </div>
+                    <div class="mt-3" id="fileInfo"></div>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button class="btn btn-primary" id="uploadBtn" disabled>
+                            <span id="loadingSpinner" class="spinner-border spinner-border-sm me-2" role="status"
+                                aria-hidden="true" style="display: none;"></span>
+                            Upload and Process
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview Section -->
+        <div id="overviewSection" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-bar-chart me-2"></i>Dataset Overview</h2>
+                <div>
+                    <span class="badge bg-primary" id="fileNameBadge">No file loaded</span>
+                    <span class="badge bg-success" id="dataQualityBadge"></span>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value" id="rowCount">0</div>
+                        <div class="stat-label">Rows</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value" id="columnCount">0</div>
+                        <div class="stat-label">Columns</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value" id="missingValues">0</div>
+                        <div class="stat-label">Missing Values</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value" id="numericCols">0</div>
+                        <div class="stat-label">Numeric Columns</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Sample Data</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="sampleTable">
+                            <thead>
+                                <tr></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5>Column Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="columnStatsAccordion"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Section -->
+        <div id="analysisSection" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-graph-up me-2"></i>Data Analysis</h2>
+                <div>
+                    <button class="btn btn-primary me-2" id="refreshAnalysisBtn">
+                        <i class="bi bi-arrow-repeat me-1"></i>Refresh Analysis
+                    </button>
+                    <button class="btn btn-success me-2" id="saveDashboardBtn">
+                        <i class="bi bi-save me-1"></i>Save Dashboard
+                    </button>
+                    <label class="btn btn-secondary">
+                        <i class="bi bi-upload me-1"></i>Load Dashboard
+                        <input type="file" id="loadDashboardInput" class="d-none" accept=".json">
+                    </label>
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Chart Controls</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">X-Axis Column</label>
+                            <select class="form-select" id="xAxisColumn">
+                                <option value="">Select...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Y-Axis Column
+                                <i class="bi bi-info-circle" data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Only numeric columns are available for the Y-axis to ensure valid visualizations."></i>
+                            </label>
+                            <select class="form-select" id="yAxisColumn">
+                                <option value="">Select...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Chart Type</label>
+                            <select class="form-select" id="chartType">
+                                <option value="bar">Bar Chart</option>
+                                <option value="line">Line Chart</option>
+                                <option value="scatter">Scatter Plot</option>
+                                <option value="histogram">Histogram</option>
+                                <option value="box">Box Plot</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" id="updateChartBtn">Add Chart</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Data Insights</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="insightsContainer"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5>Correlation Matrix</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="correlation-matrix">
+                                <div id="correlationHeatmap"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Generated Visualizations</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row" id="plotsContainer"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Assistant Section -->
+        <div id="assistantSection" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-robot me-2"></i>AI Data Assistant</h2>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Ask About Your Data</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="aiQueryInput" class="form-label">Enter your question about the data:</label>
+                        <textarea class="form-control" id="aiQueryInput" rows="3"
+                            placeholder="E.g., 'How many missing values are there?', 'What are the correlations between numeric columns?'"></textarea>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-primary me-2" id="askAiBtn">
+                            <span id="aiLoadingSpinner" class="spinner-border spinner-border-sm me-2" role="status"
+                                aria-hidden="true" style="display: none;"></span>
+                            Ask AI
+                        </button>
+                        <button class="btn btn-outline-secondary" id="voiceInputBtn" title="Use voice input">
+                            <i class="bi bi-mic"></i>
+                            <span id="voiceLoadingSpinner" class="spinner-border spinner-border-sm me-2" role="status"
+                                aria-hidden="true" style="display: none;"></span>
+                        </button>
+                    </div>
+                    <div class="ai-response mt-3" id="aiResponse">
+                        <p class="text-muted">AI responses will appear here. Try asking questions like:</p>
+                        <ul class="text-muted">
+                            <li>How many rows and columns are there?</li>
+                            <li>Which columns have missing values?</li>
+                            <li>What are the correlations between numeric columns?</li>
+                            <li>Show me summary statistics for numeric columns</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recent Questions</h5>
+                </div>
+                <div class="card-body">
+                    <div id="queryHistory"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Cleaning Section -->
+        <div id="cleanSection" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-brush me-2"></i>Data Cleaning</h2>
+            </div>
+            <div class="d-flex justify-content-end mt-3">
+                <div class="btn-group">
+                    <button class="btn btn-primary dropdown-toggle" type="button" id="saveDropdown"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-download me-2"></i>Save Cleaned Data
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="saveDropdown">
+                        <li><a class="dropdown-item" href="#" id="saveCsvBtn">Save as CSV</a></li>
+                        <li><a class="dropdown-item" href="#" id="saveExcelBtn">Save as Excel</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Missing Values</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select columns to handle missing values:</label>
+                        <select class="form-select" id="missingValueColumns" multiple></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Handling method:</label>
+                        <select class="form-select" id="missingValueMethod">
+                            <option value="mean">Replace with mean (numeric only)</option>
+                            <option value="median">Replace with median (numeric only)</option>
+                            <option value="mode">Replace with mode</option>
+                            <option value="drop">Drop rows with missing values</option>
+                            <option value="zero">Replace with zero (numeric only)</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="handleMissingValuesBtn">
+                        <span id="missingValuesSpinner" class="spinner-border spinner-border-sm me-2" role="status"
+                            aria-hidden="true" style="display: none;"></span>
+                        Handle Missing Values
+                    </button>
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Outlier Detection & Treatment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select numeric columns for outlier detection:</label>
+                        <select class="form-select" id="outlierColumns" multiple></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Outlier detection method:</label>
+                        <select class="form-select" id="outlierMethod">
+                            <option value="iqr">IQR (Interquartile Range)</option>
+                            <option value="zscore">Z-Score</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Threshold (for IQR: 1.5 = typical, 3 = strict):</label>
+                        <input type="number" class="form-control" id="outlierThreshold" value="1.5" step="0.1"
+                            min="0.1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Treatment method:</label>
+                        <select class="form-select" id="outlierTreatment">
+                            <option value="remove">Remove outliers</option>
+                            <option value="mean">Replace with mean</option>
+                            <option value="median">Replace with median</option>
+                            <option value="mode">Replace with mode</option>
+                            <option value="cap">Cap at threshold</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="handleOutliersBtn">
+                        <span id="outliersSpinner" class="spinner-border spinner-border-sm me-2" role="status"
+                            aria-hidden="true" style="display: none;"></span>
+                        Detect & Handle Outliers
+                    </button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h5>Before & After Comparison</h5>
+                </div>
+                <div class="card-body">
+                    <div class="before-after-container">
+                        <div class="before-after-col">
+                            <h6>Before Cleaning</h6>
+                            <div id="beforeCleaningStats"></div>
+                        </div>
+                        <div class="before-after-col">
+                            <h6>After Cleaning</h6>
+                            <div id="afterCleaningStats"></div>
+                        </div>
+                    </div>
+                    <div id="outliersTableContainer" style="display: none;">
+                        <h6>Detected Outliers</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="outliersTable">
+                                <thead>
+                                    <tr></tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let currentDataset = null;
+        let queryHistory = [];
+        let cleanedDataset = null;
+        let cleaningHistory = [];
+        let generatedCharts = [];
+        let predefinedPlots = [];
+
+        // DOM elements
+        const uploadSection = document.getElementById('uploadSection');
+        const overviewSection = document.getElementById('overviewSection');
+        const analysisSection = document.getElementById('analysisSection');
+        const assistantSection = document.getElementById('assistantSection');
+        const cleanSection = document.getElementById('cleanSection');
+
+        const fileInput = document.getElementById('fileInput');
+        const browseBtn = document.getElementById('browseBtn');
+        const dropArea = document.getElementById('dropArea');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInfo = document.getElementById('fileInfo');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        const fileNameBadge = document.getElementById('fileNameBadge');
+        const dataQualityBadge = document.getElementById('dataQualityBadge');
+        const rowCount = document.getElementById('rowCount');
+        const columnCount = document.getElementById('columnCount');
+        const missingValues = document.getElementById('missingValues');
+        const numericCols = document.getElementById('numericCols');
+        const sampleTable = document.getElementById('sampleTable');
+        const columnStatsAccordion = document.getElementById('columnStatsAccordion');
+
+        const insightsContainer = document.getElementById('insightsContainer');
+        const correlationHeatmap = document.getElementById('correlationHeatmap');
+        const plotsContainer = document.getElementById('plotsContainer');
+        const refreshAnalysisBtn = document.getElementById('refreshAnalysisBtn');
+
+        const xAxisColumn = document.getElementById('xAxisColumn');
+        const yAxisColumn = document.getElementById('yAxisColumn');
+        const chartType = document.getElementById('chartType');
+        const updateChartBtn = document.getElementById('updateChartBtn');
+
+        const missingValueColumns = document.getElementById('missingValueColumns');
+        const missingValueMethod = document.getElementById('missingValueMethod');
+        const handleMissingValuesBtn = document.getElementById('handleMissingValuesBtn');
+        const missingValuesSpinner = document.getElementById('missingValuesSpinner');
+
+        const outlierColumns = document.getElementById('outlierColumns');
+        const outlierMethod = document.getElementById('outlierMethod');
+        const outlierThreshold = document.getElementById('outlierThreshold');
+        const outlierTreatment = document.getElementById('outlierTreatment');
+        const handleOutliersBtn = document.getElementById('handleOutliersBtn');
+        const outliersSpinner = document.getElementById('outliersSpinner');
+
+        const beforeCleaningStats = document.getElementById('beforeCleaningStats');
+        const afterCleaningStats = document.getElementById('afterCleaningStats');
+        const outliersTableContainer = document.getElementById('outliersTableContainer');
+        const outliersTable = document.getElementById('outliersTable');
+
+        const aiQueryInput = document.getElementById('aiQueryInput');
+        const askAiBtn = document.getElementById('askAiBtn');
+        const aiResponse = document.getElementById('aiResponse');
+        const queryHistoryContainer = document.getElementById('queryHistory');
+        const aiLoadingSpinner = document.getElementById('aiLoadingSpinner');
+
+
+        const voiceInputBtn = document.getElementById('voiceInputBtn');
+        const voiceLoadingSpinner = document.getElementById('voiceLoadingSpinner');
+
+        const saveDashboardBtn = document.getElementById('saveDashboardBtn');
+        const loadDashboardInput = document.getElementById('loadDashboardInput');
+
+        // Save dataset functionality
+        document.getElementById('saveCsvBtn').addEventListener('click', () => saveData('csv'));
+        document.getElementById('saveExcelBtn').addEventListener('click', () => saveData('excel'));
+
+        function saveData(format) {
+            if (!currentDataset) {
+                alert('No data to save');
+                return;
+            }
+            const filename = prompt('Enter filename (without extension):', currentDataset.filename.replace(/\.[^/.]+$/, '') + '_cleaned');
+            if (!filename) return;
+            fetch('/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ format, filename })
+            })
+                .then(response => {
+                    if (!response.ok) return response.json().then(err => { throw new Error(err.error || 'Error saving file'); });
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${filename}.${format === 'csv' ? 'csv' : 'xlsx'}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                })
+                .catch(error => {
+                    alert(`Error saving file: ${error.message}`);
+                    console.error('Save error:', error);
+                });
+        }
+
+        // Save/load dashboard
+        saveDashboardBtn.addEventListener('click', saveDashboard);
+        function saveDashboard() {
+            if (!currentDataset && generatedCharts.length === 0 && predefinedPlots.length === 0) {
+                alert('No dashboard state to save');
+                return;
+            }
+            const dashboardState = {
+                currentDataset,
+                queryHistory,
+                cleaningHistory,
+                generatedCharts: generatedCharts.map(chart => ({ xCol: chart.xCol, yCol: chart.yCol, type: chart.type, color: chart.color, chartId: chart.chartId })),
+                predefinedPlots: predefinedPlots.map(plot => ({ plotName: plot.plotName, colName: plot.colName, plotType: plot.plotType, color: plot.color, plotId: plot.plotId }))
+            };
+            const blob = new Blob([JSON.stringify(dashboardState, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'dashboard_state.json';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        }
+
+        loadDashboardInput.addEventListener('change', loadDashboard);
+        function loadDashboard(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const dashboardState = JSON.parse(e.target.result);
+                    currentDataset = dashboardState.currentDataset;
+                    if (currentDataset) {
+                        fileNameBadge.textContent = currentDataset.filename || 'No filename';
+                        rowCount.textContent = currentDataset.rows ? currentDataset.rows.toLocaleString() : '0';
+                        columnCount.textContent = currentDataset.columns ? currentDataset.columns.length : '0';
+                        missingValues.textContent = currentDataset.missing_values_summary ? currentDataset.missing_values_summary.total_missing : '0';
+                        numericCols.textContent = Object.values(currentDataset.original_stats || {}).filter(stat => stat.type === 'numeric').length;
+                        displaySampleData(currentDataset.sample_data, currentDataset.columns);
+                        displayColumnStats(currentDataset.original_stats);
+                        displayDataQualityReport(currentDataset);
+                    }
+                    queryHistory = dashboardState.queryHistory || [];
+                    updateQueryHistory();
+                    cleaningHistory = dashboardState.cleaningHistory || [];
+                    updateBeforeCleaningStats();
+                    updateAfterCleaningStats();
+                    plotsContainer.innerHTML = '';
+                    generatedCharts = [];
+                    predefinedPlots = [];
+                    dashboardState.generatedCharts?.forEach(chart => {
+                        xAxisColumn.value = chart.xCol;
+                        yAxisColumn.value = chart.yCol;
+                        chartType.value = chart.type;
+                        updateInteractiveChart(chart.color);
+                    });
+                    predefinedPlots = dashboardState.predefinedPlots || [];
+                    showSection('analysis');
+                    loadAnalysis();
+                    alert('Dashboard state loaded successfully');
+                } catch (err) {
+                    alert(`Error loading dashboard: ${err.message}`);
+                    console.error('Load dashboard error:', err);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // Tab switching
+        document.getElementById('uploadTab').addEventListener('click', () => showSection('upload'));
+        document.getElementById('overviewTab').addEventListener('click', () => {
+            if (currentDataset) showSection('overview');
+            else alert('Please upload a dataset first');
+        });
+        document.getElementById('analysisTab').addEventListener('click', () => {
+            if (currentDataset) { showSection('analysis'); loadAnalysis(); }
+            else alert('Please upload a dataset first');
+        });
+        document.getElementById('assistantTab').addEventListener('click', () => {
+            if (currentDataset) showSection('assistant');
+            else alert('Please upload a dataset first');
+        });
+        document.getElementById('cleanTab').addEventListener('click', () => {
+            if (currentDataset) { showSection('clean'); setupCleaningControls(); }
+            else alert('Please upload a dataset first');
+        });
+
+        function showSection(section) {
+            uploadSection.style.display = 'none';
+            overviewSection.style.display = 'none';
+            analysisSection.style.display = 'none';
+            assistantSection.style.display = 'none';
+            cleanSection.style.display = 'none';
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            switch (section) {
+                case 'upload':
+                    uploadSection.style.display = 'block';
+                    document.getElementById('uploadTab').classList.add('active');
+                    break;
+                case 'overview':
+                    overviewSection.style.display = 'block';
+                    document.getElementById('overviewTab').classList.add('active');
+                    break;
+                case 'analysis':
+                    analysisSection.style.display = 'block';
+                    document.getElementById('analysisTab').classList.add('active');
+                    break;
+                case 'assistant':
+                    assistantSection.style.display = 'block';
+                    document.getElementById('assistantTab').classList.add('active');
+                    break;
+                case 'clean':
+                    cleanSection.style.display = 'block';
+                    document.getElementById('cleanTab').classList.add('active');
+                    break;
+            }
+        }
+
+        // File upload handling
+        browseBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.style.borderColor = '#0d6efd';
+            dropArea.style.backgroundColor = '#f8f9fa';
+        });
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.style.borderColor = '#dee2e6';
+            dropArea.style.backgroundColor = 'transparent';
+        });
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.style.borderColor = '#dee2e6';
+            dropArea.style.backgroundColor = 'transparent';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect({ target: fileInput });
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                fileInfo.innerHTML = `
+                    <div class="alert alert-success d-flex align-items-center">
+                        <i class="bi bi-file-earmark-check me-2"></i>
+                        <div><strong>${file.name}</strong> selected (${formatFileSize(file.size)})</div>
+                    </div>`;
+                uploadBtn.disabled = false;
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        uploadBtn.addEventListener('click', uploadFile);
+        function uploadFile() {
+            const file = fileInput.files[0];
+            if (!file) return;
+            loadingSpinner.style.display = 'inline-block';
+            uploadBtn.disabled = true;
+            const formData = new FormData();
+            formData.append('file', file);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    loadingSpinner.style.display = 'none';
+                    uploadBtn.disabled = false;
+                    if (data.error) {
+                        fileInfo.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                ${data.error}${data.details ? ': ' + data.details : ''}</div>`;
+                        return;
+                    }
+                    currentDataset = {
+                        filename: data.filename,
+                        rows: data.rows,
+                        columns: data.columns,
+                        sample_data: data.sample_data,
+                        original_stats: data.original_stats,
+                        cleaned_stats: data.cleaned_stats,
+                        before_cleaning: data.before_cleaning,
+                        after_cleaning: data.after_cleaning,
+                        original_outliers: data.original_outliers,
+                        cleaned_outliers: data.cleaned_outliers,
+                        missing_values_summary: data.missing_values_summary,
+                        data_quality: data.data_quality
+                    };
+                    fileNameBadge.textContent = data.filename || 'No filename';
+                    rowCount.textContent = data.rows ? data.rows.toLocaleString() : '0';
+                    columnCount.textContent = data.columns ? data.columns.length : '0';
+                    missingValues.textContent = data.missing_values_summary ? data.missing_values_summary.total_missing : '0';
+                    numericCols.textContent = Object.values(data.original_stats).filter(stat => stat.type === 'numeric').length;
+                    displayDataQualityReport(data);
+                    displaySampleData(data.sample_data, data.columns);
+                    displayColumnStats(data.original_stats);
+                    fileInfo.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            ${data.message}</div>`;
+                    showSection('overview');
+                })
+                .catch(error => {
+                    loadingSpinner.style.display = 'none';
+                    uploadBtn.disabled = false;
+                    fileInfo.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Error uploading file: ${error.message}</div>`;
+                    console.error('Upload error:', error);
+                });
+        }
+
+        function displayDataQualityReport(data) {
+            const existingReport = overviewSection.querySelector('.data-quality-report');
+            if (existingReport) existingReport.remove();
+            const reportDiv = document.createElement('div');
+            reportDiv.className = 'card mb-4 data-quality-report';
+            reportDiv.innerHTML = `
+                <div class="card-header"><h5>Data Quality Report</h5></div>
+                <div class="card-body">
+                    <h6>Missing Values</h6>
+                    <p>Total missing: ${data.missing_values_summary.total_missing} (${data.missing_values_summary.missing_percentage.toFixed(2)}%)</p>
+                    <h6 class="mt-3">Outliers (Before Cleaning)</h6>
+                    ${Object.keys(data.original_outliers).length > 0 ? `
+                        <table class="table table-sm">
+                            <thead><tr><th>Column</th><th>Outliers</th><th>Percentage</th><th>Bounds</th></tr></thead>
+                            <tbody>
+                                ${Object.entries(data.original_outliers).map(([col, stats]) => `
+                                    <tr>
+                                        <td>${col}</td>
+                                        <td>${stats.count}</td>
+                                        <td>${stats.percentage.toFixed(2)}%</td>
+                                        <td>Outside ${stats.lower_bound.toFixed(2)}-${stats.upper_bound.toFixed(2)}</td>
+                                    </tr>`).join('')}
+                            </tbody>
+                        </table>` : '<p>No numeric columns with outliers detected</p>'}
+                    <div class="mt-3">
+                        <strong>Data Quality Score:</strong>
+                        <span class="badge bg-${data.data_quality.quality_score > 70 ? 'success' : data.data_quality.quality_score > 40 ? 'warning' : 'danger'}">
+                            ${data.data_quality.quality_score.toFixed(1)}/100
+                        </span>
+                    </div>
+                </div>`;
+            overviewSection.insertBefore(reportDiv, overviewSection.firstChild.nextSibling);
+        }
+
+        function displaySampleData(sampleData, columns) {
+            sampleTable.innerHTML = '';
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            columns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            sampleTable.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            sampleData.forEach(row => {
+                const tr = document.createElement('tr');
+                columns.forEach(col => {
+                    const td = document.createElement('td');
+                    const value = row[col];
+                    if (value === null || value === undefined || value === '') {
+                        td.textContent = 'NULL';
+                        td.style.color = 'red';
+                        td.style.fontWeight = 'bold';
+                    } else {
+                        td.textContent = value;
+                    }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            sampleTable.appendChild(tbody);
+        }
+
+        function displayColumnStats(columnStats) {
+            columnStatsAccordion.innerHTML = '';
+            for (const [colName, stats] of Object.entries(columnStats)) {
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'accordion-item';
+                const accordionHeader = document.createElement('h2');
+                accordionHeader.className = 'accordion-header';
+                accordionHeader.id = `heading-${colName}`;
+                const accordionButton = document.createElement('button');
+                accordionButton.className = 'accordion-button collapsed';
+                accordionButton.type = 'button';
+                accordionButton.setAttribute('data-bs-toggle', 'collapse');
+                accordionButton.setAttribute('data-bs-target', `#collapse-${colName}`);
+                accordionButton.setAttribute('aria-expanded', 'false');
+                accordionButton.setAttribute('aria-controls', `collapse-${colName}`);
+                const badgeClass = stats.type === 'numeric' ? 'bg-primary' : 'bg-success';
+                accordionButton.innerHTML = `
+                    <span class="me-2">${colName}</span>
+                    <span class="badge ${badgeClass} me-2">${stats.type}</span>
+                    <span class="badge bg-secondary">Missing: ${stats.missing} (${stats.missing_percentage.toFixed(2)}%)</span>`;
+                accordionHeader.appendChild(accordionButton);
+                const accordionCollapse = document.createElement('div');
+                accordionCollapse.id = `collapse-${colName}`;
+                accordionCollapse.className = 'accordion-collapse collapse';
+                accordionCollapse.setAttribute('aria-labelledby', `heading-${colName}`);
+                accordionCollapse.setAttribute('data-bs-parent', '#columnStatsAccordion');
+                const accordionBody = document.createElement('div');
+                accordionBody.className = 'accordion-body';
+                if (stats.type === 'numeric') {
+                    accordionBody.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-3"><div class="stat-card"><div class="stat-value">${stats.mean.toFixed(2)}</div><div class="stat-label">Mean</div></div></div>
+                            <div class="col-md-3"><div class="stat-card"><div class="stat-value">${stats.median.toFixed(2)}</div><div class="stat-label">Median</div></div></div>
+                            <div class="col-md-3"><div class="stat-card"><div class="stat-value">${stats.std.toFixed(2)}</div><div class="stat-label">Std Dev</div></div></div>
+                            <div class="col-md-3"><div class="stat-card"><div class="stat-value">${stats.min.toFixed(2)} - ${stats.max.toFixed(2)}</div><div class="stat-label">Range</div></div></div>
+                        </div>
+                        <div class="mt-3"><h6>Outlier Detection</h6>
+                            <div class="row">
+                                <div class="col-md-4"><div class="stat-card"><div class="stat-value">${calculateIQR(stats).toFixed(2)}</div><div class="stat-label">IQR</div></div></div>
+                                <div class="col-md-4"><div class="stat-card"><div class="stat-value">${(stats.mean - 3 * stats.std).toFixed(2)} - ${(stats.mean + 3 * stats.std).toFixed(2)}</div><div class="stat-label">3σ Range</div></div></div>
+                                <div class="col-md-4"><div class="stat-card"><div class="stat-value">${estimateOutliers(stats).toLocaleString()}</div><div class="stat-label">Est. Outliers</div></div></div>
+                            </div>
+                        </div>`;
+                } else {
+                    let topValuesHtml = '';
+                    for (const [value, count] of Object.entries(stats.top_values)) {
+                        topValuesHtml += `<tr><td>${value}</td><td>${count}</td><td>${((count / currentDataset.rows) * 100).toFixed(2)}%</td></tr>`;
+                    }
+                    accordionBody.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6"><div class="stat-card"><div class="stat-value">${stats.unique_count}</div><div class="stat-label">Unique Values</div></div></div>
+                            <div class="col-md-6"><div class="stat-card"><div class="stat-value">${currentDataset.rows - stats.missing}</div><div class="stat-label">Non-missing Values</div></div></div>
+                        </div>
+                        <h6 class="mt-4">Top Values</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead><tr><th>Value</th><th>Count</th><th>Percentage</th></tr></thead>
+                                <tbody>${topValuesHtml}</tbody>
+                            </table>
+                        </div>`;
+                }
+                accordionCollapse.appendChild(accordionBody);
+                accordionItem.appendChild(accordionHeader);
+                accordionItem.appendChild(accordionCollapse);
+                columnStatsAccordion.appendChild(accordionItem);
+            }
+        }
+
+        function calculateIQR(stats) {
+            return (stats.q3 - stats.q1) || (stats.max - stats.min) * 0.5;
+        }
+
+        function estimateOutliers(stats) {
+            return Math.round(currentDataset.rows * 0.05);
+        }
+
+        // AI Assistant functionality
+        askAiBtn.addEventListener('click', askAI);
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false; // Stop after one phrase
+            recognition.interimResults = false; // Only final results
+            recognition.lang = 'en-US'; // Set language
+
+        }
+
+        // DOM elements
+
+        // Event listener for Ask AI button
+        askAiBtn.addEventListener('click', askAI);
+
+        // Event listener for voice input button
+        if (voiceInputBtn && recognition) {
+            voiceInputBtn.addEventListener('click', () => {
+                // Start speech recognition
+                voiceLoadingSpinner.style.display = 'inline-block';
+                voiceInputBtn.disabled = true;
+
+                recognition.start();
+
+                // Handle recognition result
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    aiQueryInput.value = transcript; // Populate textarea with recognized text
+                    voiceLoadingSpinner.style.display = 'none';
+                    voiceInputBtn.disabled = false;
+
+                    // Optional: Automatically trigger askAI after recognition
+                    // askAI();
+                };
+
+                // Handle recognition errors
+                recognition.onerror = (event) => {
+                    voiceLoadingSpinner.style.display = 'none';
+                    voiceInputBtn.disabled = false;
+                    let errorMessage = 'Speech recognition error';
+                    if (event.error === 'no-speech') {
+                        errorMessage = 'No speech detected. Please try again.';
+                    } else if (event.error === 'audio-capture') {
+                        errorMessage = 'Microphone not detected. Please ensure your microphone is connected.';
+                    } else if (event.error === 'not-allowed') {
+                        errorMessage = 'Microphone access denied. Please allow microphone permissions.';
+                    }
+                    aiResponse.innerHTML = `
+                <div class="alert alert-warning">
+                    ${errorMessage}
+                </div>
+            `;
+                };
+
+                // Handle end of recognition
+                recognition.onend = () => {
+                    voiceLoadingSpinner.style.display = 'none';
+                    voiceInputBtn.disabled = false;
+                };
+            });
+        } else if (voiceInputBtn) {
+            // Disable voice button if Web Speech API is not supported
+            voiceInputBtn.disabled = true;
+            voiceInputBtn.title = 'Voice input not supported in this browser';
+        }
+
+        // Ask AI function (unchanged)
+        function askAI() {
+            const query = aiQueryInput.value.trim();
+            if (!query) return;
+
+            aiLoadingSpinner.style.display = 'inline-block';
+            askAiBtn.disabled = true;
+
+            fetch('/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    aiLoadingSpinner.style.display = 'none';
+                    askAiBtn.disabled = false;
+
+                    if (data.error) {
+                        aiResponse.innerHTML = `
+                    <div class="alert alert-danger">
+                        ${data.error}
+                    </div>
+                `;
+                        return;
+                    }
+                    // Add to query history
+                    queryHistory.unshift({
+                        query: query,
+                        answer: data.answer,
+                        timestamp: new Date().toLocaleString()
+                    });
+
+                    // Update query history display
+                    updateQueryHistory();
+
+                    // Display response
+                    aiResponse.innerHTML = `
+                <div class="mb-2"><strong>Question:</strong> ${query}</div>
+                <div><strong>Answer:</strong> ${data.answer}</div>
+            `;
+
+                    // Clear input
+                    aiQueryInput.value = '';
+                })
+                .catch(error => {
+                    aiLoadingSpinner.style.display = 'none';
+                    askAiBtn.disabled = false;
+                    aiResponse.innerHTML = `
+                <div class="alert alert-danger">
+                    Error querying AI: ${error.message}
+                </div>
+            `;
+                });
+        }
+
+        function updateQueryHistory() {
+            const queryHistoryContainer = document.getElementById('queryHistory');
+            queryHistoryContainer.innerHTML = '';
+            if (queryHistory.length === 0) {
+                queryHistoryContainer.innerHTML = '<p class="text-muted">No recent questions.</p>';
+                return;
+            }
+            queryHistory.slice(-5).reverse().forEach((entry) => {
+                const queryElement = document.createElement('div');
+                queryElement.className = 'card mb-2';
+                queryElement.innerHTML = `
+            <div class="card-body p-3">
+                <h6 class="card-title mb-2">Question: ${entry.query}</h6>
+                <p class="card-text mb-1">${entry.answer}</p>
+                <small class="text-muted">Asked: ${entry.timestamp}</small>
+            </div>`;
+                queryHistoryContainer.appendChild(queryElement);
+            });
+        }
+        
+        // Analysis section
+        refreshAnalysisBtn.addEventListener('click', loadAnalysis);
+        function loadAnalysis() {
+            insightsContainer.innerHTML = `<div class="alert alert-info">Loading analysis...</div>`;
+            fetch('/analyze')
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to fetch analysis');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        insightsContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                        return;
+                    }
+                    displayInsights(data.insights || []);
+                    if (data.plots && data.plots.correlation_heatmap) {
+                        correlationHeatmap.innerHTML = `<img src="data:image/png;base64,${data.plots.correlation_heatmap}" class="img-fluid" alt="Correlation Heatmap">`;
+                    } else {
+                        correlationHeatmap.innerHTML = `<div class="alert alert-info">No correlation matrix available (need at least 2 numeric columns)</div>`;
+                    }
+                    displayPlots(data.plots);
+                    setupChartControls();
+                })
+                .catch(error => {
+                    insightsContainer.innerHTML = `<div class="alert alert-danger">Error loading analysis: ${error.message}</div>`;
+                    console.error('Analysis error:', error);
+                });
+        }
+
+        function setupChartControls() {
+            xAxisColumn.innerHTML = '<option value="">Select...</option>';
+            yAxisColumn.innerHTML = '<option value="">Select...</option>';
+            if (currentDataset && currentDataset.cleaned_stats && currentDataset.columns && currentDataset.sample_data) {
+                Object.keys(currentDataset.cleaned_stats).forEach(col => {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col;
+                    xAxisColumn.appendChild(option.cloneNode(true));
+                    if (currentDataset.cleaned_stats[col]?.type === 'numeric') {
+                        yAxisColumn.appendChild(option.cloneNode(true));
+                    }
+                });
+                if (currentDataset.columns.length > 0) xAxisColumn.value = currentDataset.columns[0];
+                const numericCol = Object.keys(currentDataset.cleaned_stats).find(col => currentDataset.cleaned_stats[col]?.type === 'numeric');
+                if (numericCol) yAxisColumn.value = numericCol;
+                document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+                updateYAxisVisibility();
+            } else {
+                plotsContainer.innerHTML = `<div class="alert alert-warning">No valid dataset statistics or sample data available for charting. Please upload a dataset.</div>`;
+            }
+        }
+
+        function updateYAxisVisibility() {
+            const type = chartType.value;
+            const yAxisContainer = yAxisColumn.parentElement;
+            const yAxisLabel = yAxisContainer.querySelector('.form-label') || document.createElement('label');
+            yAxisLabel.className = 'form-label';
+            if (type === 'histogram' || type === 'box') {
+                yAxisColumn.disabled = true;
+                yAxisContainer.style.opacity = '0.5';
+                yAxisLabel.innerHTML = `
+                    Y-Axis Column
+                    <i class="bi bi-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Y-axis is not used for ${type} charts."></i>`;
+            } else {
+                yAxisColumn.disabled = false;
+                yAxisContainer.style.opacity = '1';
+                yAxisLabel.innerHTML = `
+                    Y-Axis Column
+                    <i class="bi bi-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Only numeric columns are available for the Y-axis to ensure valid visualizations."></i>`;
+            }
+            if (!yAxisContainer.querySelector('.form-label')) yAxisContainer.insertBefore(yAxisLabel, yAxisColumn);
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+        }
+
+        chartType.addEventListener('change', updateYAxisVisibility);
+        updateChartBtn.addEventListener('click', () => updateInteractiveChart());
+
+        function updateInteractiveChart(overrideColor) {
+            const xCol = xAxisColumn.value;
+            const yCol = yAxisColumn.value;
+            const type = chartType.value;
+            const chartColor = overrideColor || '#0d6efd';
+            if (!xCol || !currentDataset || !currentDataset.sample_data || !currentDataset.cleaned_stats) {
+                plotsContainer.innerHTML = `<div class="alert alert-warning">Please select an X-axis column and ensure a valid dataset is loaded.</div>`;
+                return;
+            }
+            const chartKey = `${xCol}-${yCol || ''}-${type}`;
+            if (generatedCharts.some(chart => chart.key === chartKey)) {
+                alert('This chart configuration already exists in Generated Visualizations.');
+                return;
+            }
+            const validData = currentDataset.sample_data.filter(row =>
+                row[xCol] !== null && row[xCol] !== undefined &&
+                (!yCol || (row[yCol] !== null && row[yCol] !== undefined)));
+            if (validData.length === 0) {
+                plotsContainer.innerHTML = `<div class="alert alert-warning">No valid data available for the selected columns: ${xCol}${yCol ? ', ' + yCol : ''}.</div>`;
+                return;
+            }
+            const xColType = currentDataset.cleaned_stats[xCol]?.type || 'unknown';
+            const yColType = yCol ? currentDataset.cleaned_stats[yCol]?.type || 'unknown' : null;
+            let plotData = [];
+            let layout = {};
+            try {
+                if (type === 'histogram') {
+                    plotData = [{ x: validData.map(row => row[xCol]), type: 'histogram', name: xCol, marker: { color: chartColor } }];
+                    layout = { title: { text: `Distribution of ${xCol}`, x: 0.5 }, xaxis: { title: xCol }, yaxis: { title: 'Count' }, bargap: 0.1 };
+                } else if (type === 'box') {
+                    if (xColType !== 'numeric') {
+                        alert(`Box plot requires a numeric column. Selected column "${xCol}" is ${xColType}.`);
+                        return;
+                    }
+                    plotData = [{ y: validData.map(row => row[xCol]), type: 'box', name: xCol, boxpoints: 'outliers', marker: { color: chartColor } }];
+                    layout = { title: { text: `Box Plot of ${xCol}`, x: 0.5 }, yaxis: { title: xCol } };
+                } else if (type === 'bar' || type === 'line') {
+                    if (!yCol) {
+                        alert(`Please select a Y-axis column for ${type} charts.`);
+                        return;
+                    }
+                    if (yColType !== 'numeric') {
+                        alert(`${type.charAt(0).toUpperCase() + type.slice(1)} chart requires a numeric Y-axis column. Selected column "${yCol}" is ${yColType}.`);
+                        return;
+                    }
+                    if (xColType === 'categorical') {
+                        const groupedData = {};
+                        validData.forEach(row => {
+                            const key = row[xCol];
+                            if (!groupedData[key]) groupedData[key] = { sum: 0, count: 0 };
+                            groupedData[key].sum += Number(row[yCol]) || 0;
+                            groupedData[key].count++;
+                        });
+                        const categories = Object.keys(groupedData);
+                        const values = categories.map(cat => groupedData[cat].sum / groupedData[cat].count);
+                        plotData = [{ x: categories, y: values, type: type, name: yCol, marker: type === 'bar' ? { color: chartColor } : { line: { color: chartColor } } }];
+                        layout = { title: { text: `${yCol} by ${xCol}`, x: 0.5 }, xaxis: { title: xCol, tickangle: 45 }, yaxis: { title: yCol } };
+                    } else {
+                        plotData = [{ x: validData.map(row => row[xCol]), y: validData.map(row => row[yCol]), type: type, name: yCol, marker: type === 'bar' ? { color: chartColor } : { line: { color: chartColor } } }];
+                        layout = { title: { text: `${yCol} vs ${xCol}`, x: 0.5 }, xaxis: { title: xCol }, yaxis: { title: yCol } };
+                    }
+                } else if (type === 'scatter') {
+                    if (!yCol) {
+                        alert('Please select a Y-axis column for scatter plot.');
+                        return;
+                    }
+                    if (xColType !== 'numeric' || yColType !== 'numeric') {
+                        alert(`Scatter plot requires numeric columns for both axes. X-axis "${xCol}" is ${xColType}, Y-axis "${yCol}" is ${yColType}.`);
+                        return;
+                    }
+                    plotData = [{ x: validData.map(row => row[xCol]), y: validData.map(row => row[yCol]), mode: 'markers', type: 'scatter', name: `${yCol} vs ${xCol}`, marker: { color: chartColor, size: 8 } }];
+                    layout = { title: { text: `${yCol} vs ${xCol}`, x: 0.5 }, xaxis: { title: xCol }, yaxis: { title: yCol } };
+                }
+                const chartId = `chart-${generatedCharts.length}-${Date.now()}`;
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'col-md-6 chart-container';
+                chartContainer.innerHTML = `
+                    <div class="plot-container">
+                        <button class="btn btn-danger btn-sm chart-delete-btn" data-chart-id="${chartId}"><i class="bi bi-trash"></i></button>
+                        <input type="color" class="chart-color-picker" data-chart-id="${chartId}" value="${chartColor}" title="Change chart color">
+                        <h6>${type.charAt(0).toUpperCase() + type.slice(1)}: ${xCol}${yCol ? ' vs ' + yCol : ''}</h6>
+                        <div id="${chartId}" style="width: 100%; height: 400px;"></div>
+                    </div>`;
+                plotsContainer.appendChild(chartContainer);
+                Plotly.newPlot(chartId, plotData, layout, { responsive: true }).catch(err => {
+                    chartContainer.innerHTML = `<div class="alert alert-danger">Error rendering chart: ${err.message}</div>`;
+                });
+                generatedCharts.push({ key: chartKey, xCol, yCol, type, color: chartColor, chartId, plotData, layout });
+                chartContainer.querySelector('.chart-delete-btn').addEventListener('click', () => deleteChart(chartId));
+                chartContainer.querySelector('.chart-color-picker').addEventListener('change', (e) => changeChartColor(chartId, e.target.value));
+            } catch (err) {
+                plotsContainer.innerHTML = `<div class="alert alert-danger">Error generating chart: ${err.message}</div>`;
+            }
+        }
+
+        function deleteChart(chartId) {
+            const chartContainer = document.querySelector(`.chart-container [data-chart-id="${chartId}"]`)?.closest('.chart-container');
+            if (chartContainer) {
+                chartContainer.remove();
+                generatedCharts = generatedCharts.filter(chart => chart.chartId !== chartId);
+                predefinedPlots = predefinedPlots.filter(plot => plot.plotId !== chartId);
+            }
+        }
+
+        function changeChartColor(chartId, newColor) {
+            const chart = generatedCharts.find(c => c.chartId === chartId);
+            if (chart) {
+                chart.color = newColor;
+                const update = chart.type === 'bar' || chart.type === 'histogram' || chart.type === 'box' ?
+                    { 'marker.color': newColor } : { 'marker.color': newColor, 'line.color': newColor };
+                Plotly.restyle(chartId, update).catch(err => console.error('Error updating chart color:', err));
+            } else {
+                const plot = predefinedPlots.find(p => p.plotId === chartId);
+                if (plot) {
+                    plot.color = newColor;
+                    // Find the container and update the border color
+                    const container = document.querySelector(`.chart-container [data-chart-id="${chartId}"]`).closest('.plot-container');
+                    if (container) {
+                        container.style.borderLeft = `4px solid ${newColor}`;
+                    }
+                }
+            }
+        }
+
+        function displayInsights(insights) {
+            insightsContainer.innerHTML = '';
+            if (!insights || !Array.isArray(insights) || insights.length === 0) {
+                insightsContainer.innerHTML = `<div class="alert alert-info">No significant insights were automatically detected in the data.</div>`;
+                return;
+            }
+            insights.forEach(insight => {
+                if (!insight || typeof insight !== 'object') return;
+                const description = insight.description || 'No description available';
+                const strength = insight.strength || 0.5;
+                const strengthClass = strength > 0.7 ? 'strength-high' : strength > 0.5 ? 'strength-medium' : 'strength-low';
+                const insightElement = document.createElement('div');
+                insightElement.className = `card insight-card ${strengthClass} mb-2`;
+                insightElement.innerHTML = `<div class="card-body p-3"><p class="card-text mb-0">${description}</p></div>`;
+                insightsContainer.appendChild(insightElement);
+            });
+        }
+
+        function displayPlots(plots) {
+            if (!plots || typeof plots !== 'object') {
+                plotsContainer.innerHTML = `<div class="alert alert-info">No plots available.</div>`;
+                return;
+            }
+            predefinedPlots = [];
+            for (const [plotName, plotData] of Object.entries(plots)) {
+                if (plotName === 'correlation_heatmap') continue;
+                const plotType = plotName.includes('histogram') ? 'Histogram' : plotName.includes('countplot') ? 'Count Plot' : 'Plot';
+                const colName = plotName.replace('_histogram', '').replace('_countplot', '');
+                const plotId = `predefined-${plotName}-${Date.now()}`;
+                const savedPlot = predefinedPlots.find(p => p.plotName === plotName) || { color: '#0d6efd' };
+                const plotCol = document.createElement('div');
+                plotCol.className = 'col-md-6 chart-container';
+                plotCol.innerHTML = `
+            <div class="plot-container" style="border-left: 4px solid ${savedPlot.color}">
+                <button class="btn btn-danger btn-sm chart-delete-btn" data-chart-id="${plotId}"><i class="bi bi-trash"></i></button>
+                <input type="color" class="chart-color-picker" data-chart-id="${plotId}" value="${savedPlot.color}" title="Change plot color">
+                <h6>${plotType}: ${colName}</h6>
+                <img src="data:image/png;base64,${plotData}" class="img-fluid" alt="${plotName}">
+            </div>`;
+                plotsContainer.appendChild(plotCol);
+                predefinedPlots.push({ plotName, colName, plotType, color: savedPlot.color, plotId });
+                plotCol.querySelector('.chart-delete-btn').addEventListener('click', () => deleteChart(plotId));
+                plotCol.querySelector('.chart-color-picker').addEventListener('change', (e) => changeChartColor(plotId, e.target.value));
+            }
+        }
+
+        // Data Cleaning Section
+        function setupCleaningControls() {
+            missingValueColumns.innerHTML = '';
+            outlierColumns.innerHTML = '';
+            currentDataset.columns.forEach(col => {
+                const option = document.createElement('option');
+                option.value = col;
+                option.textContent = col;
+                missingValueColumns.appendChild(option.cloneNode(true));
+                if (currentDataset.original_stats[col]?.type === 'numeric') outlierColumns.appendChild(option.cloneNode(true));
+            });
+            updateBeforeCleaningStats();
+            updateAfterCleaningStats();
+        }
+
+        function updateBeforeCleaningStats() {
+            if (!currentDataset || !currentDataset.before_cleaning) {
+                beforeCleaningStats.innerHTML = '<p class="text-muted">No data available</p>';
+                return;
+            }
+            let statsHtml = '<h6>Numeric Columns Statistics</h6>';
+            statsHtml += `
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Column</th><th>Mean</th><th>Median</th><th>Mode</th><th>Outliers</th></tr></thead>
+                        <tbody>`;
+            for (const [col, stats] of Object.entries(currentDataset.before_cleaning.numeric_columns)) {
+                if (stats.mean !== null) {
+                    statsHtml += `
+                        <tr>
+                            <td>${col}</td>
+                            <td>${stats.mean ? stats.mean.toFixed(2) : 'N/A'}</td>
+                            <td>${stats.median ? stats.median.toFixed(2) : 'N/A'}</td>
+                            <td>${stats.mode ? stats.mode.toFixed(2) : 'N/A'}</td>
+                            <td>${stats.outliers.count} (${stats.outliers.percentage.toFixed(2)}%)</td>
+                        </tr>`;
+                }
+            }
+            if (Object.values(currentDataset.before_cleaning.numeric_columns).every(stats => stats.mean === null)) {
+                statsHtml += `<tr><td colspan="5" class="text-center text-muted">No numeric columns available</td></tr>`;
+            }
+            statsHtml += `</tbody></table></div>`;
+            beforeCleaningStats.innerHTML = statsHtml;
+        }
+
+        function updateAfterCleaningStats() {
+            if (!currentDataset || !currentDataset.after_cleaning) {
+                afterCleaningStats.innerHTML = '<p class="text-muted">No cleaning operations performed yet</p>';
+                return;
+            }
+            let statsHtml = '<h6>Numeric Columns Statistics</h6>';
+            statsHtml += `
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Column</th><th>Mean</th><th>Median</th><th>Mode</th><th>Outliers</th></tr></thead>
+                        <tbody>`;
+            for (const [col, stats] of Object.entries(currentDataset.after_cleaning.numeric_columns)) {
+                if (stats.mean !== null) {
+                    statsHtml += `
+                        <tr>
+                            <td>${col}</td>
+                            <td>${stats.mean ? stats.mean.toFixed(2) : 'N/A'}</td>
+                            <td>${stats.median ? stats.median.toFixed(2) : 'N/A'}</td>
+                            <td>${stats.mode ? stats.mode.toFixed(2) : 'N/A'}</td>
+                            <td>${stats.outliers.count} (${stats.outliers.percentage.toFixed(2)}%)</td>
+                        </tr>`;
+                }
+            }
+            if (Object.values(currentDataset.after_cleaning.numeric_columns).every(stats => stats.mean === null)) {
+                statsHtml += `<tr><td colspan="5" class="text-center text-muted">No numeric columns available</td></tr>`;
+            }
+            statsHtml += `</tbody></table></div>`;
+            afterCleaningStats.innerHTML = statsHtml;
+        }
+
+        handleMissingValuesBtn.addEventListener('click', handleMissingValues);
+
+        function calculateQualityScore(missingSummary, outlierStats) {
+            const missingPenalty = missingSummary.missing_percentage * 2;
+            const outlierPenalty = Object.values(outlierStats).reduce((sum, stats) => sum + stats.percentage, 0) * 0.5;
+            return Math.max(0, 100 - missingPenalty - outlierPenalty);
+        }
+
+        function handleMissingValues() {
+            const selectedColumns = Array.from(missingValueColumns.selectedOptions).map(opt => opt.value);
+            const method = missingValueMethod.value;
+
+            if (selectedColumns.length === 0) {
+                alert('Please select at least one column');
+                return;
+            }
+
+            missingValuesSpinner.style.display = 'inline-block';
+            handleMissingValuesBtn.disabled = true;
+
+            fetch('/filter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    cleaning: {
+                        missing_values: {
+                            columns: selectedColumns,
+                            method: method
+                        }
+                    }
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    missingValuesSpinner.style.display = 'none';
+                    handleMissingValuesBtn.disabled = false;
+
+                    if (data.error) {
+                        alert(`Error: ${data.error}`);
+                        return;
+                    }
+
+                    // Update dataset with new data
+                    currentDataset.sample_data = data.data;
+                    currentDataset.columns = data.columns.map(col => col.name);
+                    currentDataset.after_cleaning = data.after_cleaning;
+
+                    // Record cleaning operation
+                    cleaningHistory.push({
+                        type: 'missing_values',
+                        columns: selectedColumns,
+                        method: method,
+                        timestamp: new Date().toLocaleString()
+                    });
+
+                    // Update UI
+                    alert(`Successfully handled missing values in ${selectedColumns.join(', ')} using ${method}`);
+                    updateBeforeCleaningStats();
+                    updateAfterCleaningStats();
+                    displaySampleData(currentDataset.sample_data, currentDataset.columns);
+                })
+                .catch(error => {
+                    missingValuesSpinner.style.display = 'none';
+                    handleMissingValuesBtn.disabled = false;
+                    alert(`Error handling missing values: ${error.message}`);
+                    console.error('Missing values error:', error);
+                });
+        }
+
+        handleOutliersBtn.addEventListener('click', handleOutliers);
+
+        function handleOutliers() {
+            const selectedColumns = Array.from(outlierColumns.selectedOptions).map(opt => opt.value);
+            const method = outlierMethod.value;
+            const threshold = parseFloat(outlierThreshold.value);
+            const treatment = outlierTreatment.value;
+
+            if (selectedColumns.length === 0) {
+                alert('Please select at least one column');
+                return;
+            }
+
+            if (isNaN(threshold)) {
+                alert('Please enter a valid threshold value');
+                return;
+            }
+
+            outliersSpinner.style.display = 'inline-block';
+            handleOutliersBtn.disabled = true;
+
+            fetch('/filter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    cleaning: {
+                        outliers: {
+                            columns: selectedColumns,
+                            method: method,
+                            threshold: threshold,
+                            treatment: treatment
+                        }
+                    }
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    outliersSpinner.style.display = 'none';
+                    handleOutliersBtn.disabled = false;
+
+                    if (data.error) {
+                        alert(`Error: ${data.error}`);
+                        return;
+                    }
+
+                    // Update dataset with new data
+                    currentDataset.sample_data = data.data;
+                    currentDataset.columns = data.columns.map(col => col.name);
+                    currentDataset.after_cleaning = data.after_cleaning;
+
+                    // Record cleaning operation
+                    cleaningHistory.push({
+                        type: 'outliers',
+                        columns: selectedColumns,
+                        method: method,
+                        threshold: threshold,
+                        treatment: treatment,
+                        outliersCount: data.cleaning_results.outliers ? data.cleaning_results.outliers.length : 0,
+                        timestamp: new Date().toLocaleString()
+                    });
+
+                    // Update UI
+                    alert(`Successfully handled ${data.cleaning_results.outliers ? data.cleaning_results.outliers.length : 0} outliers in ${selectedColumns.join(', ')} using ${treatment}`);
+                    updateBeforeCleaningStats();
+                    updateAfterCleaningStats();
+                    displaySampleData(currentDataset.sample_data, currentDataset.columns);
+
+                    // Show outliers table
+                    if (data.cleaning_results.outliers) {
+                        displayOutliersTable(data.cleaning_results.outliers);
+                    } else {
+                        outliersTableContainer.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    outliersSpinner.style.display = 'none';
+                    handleOutliersBtn.disabled = false;
+                    alert(`Error handling outliers: ${error.message}`);
+                    console.error('Outliers error:', error);
+                });
+        }
+
+        function displayOutliersTable(outliersData) {
+            outliersTableContainer.style.display = 'block';
+            outliersTable.innerHTML = '';
+            if (!outliersData || outliersData.length === 0) {
+                outliersTableContainer.innerHTML = '<p class="text-muted">No outliers detected</p>';
+                return;
+            }
+            const columns = Object.keys(outliersData[0]);
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            columns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            outliersTable.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            outliersData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'outlier-row';
+                columns.forEach(col => {
+                    const td = document.createElement('td');
+                    td.textContent = row[col] !== null && row[col] !== undefined ? row[col] : 'NULL';
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            outliersTable.appendChild(tbody);
+        }
+
+        // Initialize
+        showSection('upload');
+        // document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+    </script>
+</body>
+
+</html>
