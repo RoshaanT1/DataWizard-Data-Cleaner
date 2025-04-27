@@ -88,8 +88,6 @@ Build an intuitive, AI-driven data exploration tool that:
 ### Prerequisites
 
 - Python 3.8+
-- Node.js (if using React frontend)
-- API key for OpenAI or equivalent LLM provider
 
 ### Setup
 
