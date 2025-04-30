@@ -130,7 +130,7 @@ python app.py
 
 |      Name     |              Role                    |
 |---------------|--------------------------------------|
-| Roshaan Tahir |  Frontend Developer & Agentic AI     |
+| Roshaan Tahir |  Developer & Agentic AI              |
 | M.Hammad Khan |  Backend Developer & Speech to Text  |
 | Huzaifa Amir  |  Backend Concept                     |
 
