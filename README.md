@@ -92,8 +92,8 @@ Build an intuitive, AI-driven data exploration tool that:
 ### Setup
 
 ```bash
-git clone https://github.com/your-username/ai-data-explorer.git
-cd ai-data-explorer
+git clone https://github.com/RoshaanT1/DataWizard-Data-Cleaner.git
+cd DataWizard-Data-Cleaner
 ```
 Python (Backend)
 ```bash
@@ -141,7 +141,7 @@ python app.py
 - ✅ Working prototype  
 - ✅ Source code  
 - ✅ Sample dataset    
-- ✅ README (this file)  
+- ✅ README
 
 ---
 
