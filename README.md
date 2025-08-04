@@ -132,7 +132,6 @@ python app.py
 |---------------|--------------------------------------|
 | Roshaan Tahir |  Developer & Agentic AI              |
 | M.Hammad Khan |  Backend Developer & Speech to Text  |
-| Huzaifa Amir  |  Backend Concept                     |
 
 ---
 
