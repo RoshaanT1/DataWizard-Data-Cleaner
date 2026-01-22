@@ -4,6 +4,30 @@ Welcome to our submission for the **University Hackathon** hosted by the **Data 
 
 ---
 
+## 📝 Professional Resume Description
+
+**For Resume/Portfolio Use:**
+
+```latex
+\item \textbf{DataWizard: AI-Powered Data Analysis Platform} 
+\hfill (Python, Flask, DeepSeek (model), Pandas, \href{https://github.com/RoshaanT1/DataWizard-Data-Cleaner}{GitHub})
+\vspace{-2pt}
+\begin{itemize} \setlength\itemsep{2pt}
+    \item Developed AI-powered analytics platform empowering non-technical users to analyze datasets via natural language queries leveraging 2B parameter DeepSeek model.\vspace{-7pt}
+    \item Engineered automated data cleaning pipeline, intelligent visualization engine, and autonomous insight generation with offline-first architecture.
+\end{itemize}
+```
+
+**Key Improvements:**
+- "Built" → "Developed" / "Engineered" (more professional, action-oriented)
+- "enabling" → "empowering" (stronger verb choice)
+- "through natural language queries using" → "via natural language queries leveraging" (more concise)
+- "Implemented" → "Engineered" (stronger technical term)
+- "smart visualizations" → "intelligent visualization engine" (more professional)
+- "without requiring internet connectivity" → "with offline-first architecture" (positive framing)
+
+---
+
 ## 🎯 Objective
 
 Build an intuitive, AI-driven data exploration tool that:
